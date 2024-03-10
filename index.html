@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous" />
+  <title>Assignment 1 - Syrus Samson</title>
+  <style>
+    course {
+      display: block;
+      width: 100%;
+      border: 1px solid rgb(217, 217, 217);
+      border-radius: 8px;;
+      padding: 0.25em;
+      title {
+        font-weight: 600;
+        font-size: 1.3em
+      };
+      margin-top: 10px;
+      title::after, facilitator:after {
+        content:"\a";
+        white-space: pre;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="main-container container">
+    <div class="main-header-row d-flex justify-content-between align-items-center">
+      <div class="container-left">
+        <h1>Web Dev Assignment Tracker 📝</h1>
+      </div>
+      <div class="container-right" id="completedID"></div>
+    </div>
+    <div class="mt-3">
+     <div class="d-flex justify-content-between">
+      <div> 
+        <button class="btn btn-outline-primary btn-lg my-1" onclick="((e) => {
+        const form = document.getElementById('newForm');
+        const view = document.getElementById('viewAll');
+        const subj = document.getElementById('subjectInfo');
+        view.style.display = 'none';
+        form.style.display = 'block';
+        subj.style.display = 'none';
+          })()">Add New</button>
+
+        <button class="btn btn-outline-primary btn-lg my-1" onclick="((e) => {
+        const form = document.getElementById('newForm');
+        const view = document.getElementById('viewAll');
+        const subj = document.getElementById('subjectInfo');
+        view.style.display = 'block';
+        form.style.display = 'none';
+        subj.style.display = 'none';
+    })()">View All</button>
+    </div>
+    <div>
+      <button class="btn btn-outline-secondary btn-lg my-1" onclick="((e) => {
+        const form = document.getElementById('newForm');
+        const view = document.getElementById('viewAll');
+        const subj = document.getElementById('subjectInfo');
+        form.style.display = 'none';
+        view.style.display = 'none';
+        subj.style.display = 'block'
+    })()">
+        Course Info
+      </button>
+    </div>
+     </div>
+      <div class="form-container" id="newForm" style="display: none">
+        <form class="border rounded p-3" onsubmit="submitForm(event)">
+          <h3>Add New Assignment</h3>
+          <label class="form-label">Subject</label>
+          <select required class="form-select " id="subjectDropdown">
+          </select>
+          <label class="form-label">Assignment title</label>
+          <input required class="form-control" id="assignmentTitle" />
+          <label class="form-label">Things to do (separated by commas)</label>
+          <textarea required class="form-control" style="resize: none;" id="tasks"></textarea>
+          <label>Due Date</label>
+          <input required type="date" class="form-control" id="dueDate">
+          <button class="btn btn-primary mt-3" type="submit">Submit</button>
+        </form>
+      </div>
+      <div class="form-container p-3 border rounded" id="viewAll" style="display: none;">
+        <h3>All Assignments</h3>
+        <div>
+          <div id="assignments"></div>
+        </div>
+      </div>
+      <div class="form-container p-3 border rounded" id="subjectInfo"  style="display: block;">
+        <h2>Course Info</h2>
+      </div>
+      </form>
+    </div>
+  </div>
+
+  </div>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchSubjects = () => {
+        const xhr = new XMLHttpRequest()
+        const method = "GET"
+        const endpoint = 'subjects'
+        const server = `http://localhost:8000/server.php?resource=${endpoint}`;
+
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            const subjects = JSON.parse(xhr.responseText);
+            console.log('GET subjects from ' + server, subjects)
+            var subjectList = document.getElementById('subjectDropdown');
+            subjects.forEach((subject) => {
+              var option = document.createElement('option');
+              option.textContent = subject.subject;
+              option.value = subject.subject
+              subjectList.appendChild(option);
+            });
+          }
+        };
+        xhr.open(method, server, true);
+        xhr.send();
+      }
+      fetchSubjects();
+
+      fetchAssignments = () => {
+        const req = new XMLHttpRequest();
+        const method = "GET";
+        const endpoint = 'assignments';
+        const server = `http://localhost:8000/server.php?resource=${endpoint}`;
+
+        req.onreadystatechange = () => {
+          if (req.readyState === 4 && req.status === 200) {
+            const assignments = JSON.parse(req.responseText);
+            console.log(assignments)
+            console.log('GET assignments from ' + server, assignments);
+            var assignmentsList = document.getElementById('assignments');
+            assignments.map((assignment) => {
+              const container = document.createElement('div');
+              container.setAttribute('class', 'assignment-container container border p-2 rounded mt-3');
+
+              const header = document.createElement('h5');
+              header.textContent = `Assignment Title: ${assignment.assignmentName}`;
+
+
+              const subject = document.createElement('h3');
+              subject.textContent = `Subject: ${assignment.subjectTitle}`;
+
+              const thingsToDo = document.createElement('div');
+              const tasks = assignment.tasks.split(',')
+              const ul = document.createElement('ul')
+              thingsToDo.textContent = `Things to do: `;
+              tasks.map((task) => {
+                const item = document.createElement('li')
+                item.textContent = task.trim()
+
+                ul.append(item)
+              })
+              thingsToDo.append(ul)
+              const completedID = document.getElementById('completedID')
+              completedID.textContent = `${assignments.length} assignment${assignments.length === 1 ? "" : 's'}`
+              const data = document.createElement('span');
+              data.textContent = `Due Date: ${assignment.dueDate}`;
+
+              container.append(subject);
+              container.append(header);
+              container.append(thingsToDo);
+              container.append(data);
+
+              assignmentsList.append(container);
+            });
+          }
+        };
+
+        req.open(method, server, true);
+        req.send();
+      };
+      fetchAssignments();
+
+      fetchXML =() => {
+        const xhr = new XMLHttpRequest()
+        const method = "GET"
+        const endpoint = 'courseInfoXML'
+        const server = `http://localhost:8000/server.php?resource=${endpoint}`;
+
+        xhr.onreadystatechange = () => {
+          if (xhr.readyState === 4 && xhr.status === 200) {
+            const subjects = xhr.response
+            console.log('GET subjects from ' + server)
+            console.log("XML Response: ", subjects)
+
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(subjects, 'application/xml');
+
+            var info = document.getElementById('subjectInfo');
+              info.append(xmlDoc.documentElement);
+          }
+        };
+        xhr.open(method, server, true);
+        xhr.send();
+      }
+      fetchXML()
+    });
+    function submitForm(event) {
+      event.preventDefault();
+
+      const subject = document.getElementById('subjectDropdown').value;
+      const title = document.getElementById('assignmentTitle').value;
+      const tasks = document.getElementById('tasks').value.trim();
+      const dueDate = document.getElementById('dueDate').value;
+
+
+      const req = new XMLHttpRequest();
+      req.open('POST', 'http://localhost:8000/server.php?resource=assignments', true);
+      req.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+      const data = `subjectTitle=${encodeURIComponent(subject)}&assignmentName=${encodeURIComponent(title)}&tasks=${encodeURIComponent(tasks)}&dueDate=${encodeURIComponent(dueDate)}`;
+      req.send(data);
+    }
+  </script>
+</body>
+
+</html>
